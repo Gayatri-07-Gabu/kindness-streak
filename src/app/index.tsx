@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KINDNESS_IDEAS = [
@@ -16,7 +16,17 @@ const KINDNESS_IDEAS = [
 const STORAGE_KEY = 'kindness_logs';
 
 function getTodayString() {
-  return new Date().toISOString().split('T')[0]; // e.g. "2026-09-23"
+  return new Date().toISOString().split('T')[0];
+}
+
+function getLast30Days() {
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+  return days;
 }
 
 export default function HomeScreen() {
@@ -36,7 +46,7 @@ export default function HomeScreen() {
 
   async function logTodayKindness() {
     const today = getTodayString();
-    if (loggedDates.includes(today)) return; // already logged today
+    if (loggedDates.includes(today)) return;
 
     const updated = [...loggedDates, today];
     setLoggedDates(updated);
@@ -50,31 +60,47 @@ export default function HomeScreen() {
 
   const doneToday = loggedDates.includes(getTodayString());
   const streak = loggedDates.length;
+  const last30 = getLast30Days();
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Kindness Streak</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Kindness Streak</Text>
 
-      <View style={styles.streakBox}>
-        <Text style={styles.streakNumber}>{streak}</Text>
-        <Text style={styles.streakLabel}>day{streak === 1 ? '' : 's'} of kindness</Text>
-      </View>
+        <View style={styles.streakBox}>
+          <Text style={styles.streakNumber}>{streak}</Text>
+          <Text style={styles.streakLabel}>day{streak === 1 ? '' : 's'} of kindness</Text>
+        </View>
 
-      <TouchableOpacity
-        style={[styles.button, doneToday && styles.buttonDone]}
-        onPress={logTodayKindness}
-        disabled={doneToday}
-      >
-        <Text style={styles.buttonText}>
-          {doneToday ? '✓ Logged for today' : 'I did a kind thing today'}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, doneToday && styles.buttonDone]}
+          onPress={logTodayKindness}
+          disabled={doneToday}
+        >
+          <Text style={styles.buttonText}>
+            {doneToday ? '✓ Logged for today' : 'I did a kind thing today'}
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.ideaButton} onPress={showRandomIdea}>
-        <Text style={styles.ideaButtonText}>Need an idea?</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.ideaButton} onPress={showRandomIdea}>
+          <Text style={styles.ideaButtonText}>Need an idea?</Text>
+        </TouchableOpacity>
 
-      {idea ? <Text style={styles.ideaText}>{idea}</Text> : null}
+        {idea ? <Text style={styles.ideaText}>{idea}</Text> : null}
+
+        <Text style={styles.calendarTitle}>Last 30 days</Text>
+        <View style={styles.calendarGrid}>
+          {last30.map((day) => (
+            <View
+              key={day}
+              style={[
+                styles.dayCell,
+                loggedDates.includes(day) && styles.dayCellLogged,
+              ]}
+            />
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -82,10 +108,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
     backgroundColor: '#fff8f0',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    padding: 24,
+    paddingTop: 60,
   },
   title: {
     fontSize: 28,
@@ -131,10 +159,34 @@ const styles = StyleSheet.create({
   },
   ideaText: {
     marginTop: 12,
+    marginBottom: 12,
     fontSize: 16,
     textAlign: 'center',
     color: '#4a3f35',
     fontStyle: 'italic',
     paddingHorizontal: 24,
+  },
+  calendarTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4a3f35',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    width: 280,
+    gap: 6,
+  },
+  dayCell: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#e8ddd0',
+  },
+  dayCellLogged: {
+    backgroundColor: '#e07a5f',
   },
 });
